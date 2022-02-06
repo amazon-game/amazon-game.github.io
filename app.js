@@ -66,11 +66,16 @@ class Field {
   #amountOfPossibleMoves
   constructor(size=6, settings=params) {
     this.size = size // board size (size)
-    this.map = []
+    this.settings = settings
+    this.delay = new Timer()
 
+    this.restart()
+  }
+
+  restart() {
+    this.map = []
     this.moveOnFieldFor = 'p1'
     this.gameOver = false
-    this.settings = settings
 
     for (let i = 0; i < this.size; i++) {
       let k = []
@@ -115,19 +120,20 @@ class Field {
         // draw plit
         rect(this.x+j*this.blockSize, this.y+i*this.blockSize, this.blockSize)
         pop()
-
+        push()
+        noStroke()
         ;(()=>{
-          push()
+          let shape = 'crcl'
           if (this.map[i][j].selected) {  // drawing selected
-            if (this.#playerActMoved  && !disableOption[1]) fill('#ffff0055')  // if shooting
-            else if (!this.#playerActMoved && !disableOption[0]) fill('#ff000055')  // if moving
+            if (this.#playerActMoved  && !disableOption[1]) fill('#ffffff33')  // if shooting
+            else if (!this.#playerActMoved && !disableOption[0]) fill('#00000033')  // if moving
             else {noFill(); noStroke()}
-          } else if (i == this.#lastMy && j == this.#lastMx && this.map[i][j].type == this.moveOnFieldFor) fill(col.shadow.slice(0, -2)+'55')
+          } else if (i == this.#lastMy && j == this.#lastMx && this.map[i][j].type == this.moveOnFieldFor) {fill(col.shadow.slice(0, -2)+'33'); shape = 'sqr'}
           else return
-          rect(this.x+j*this.blockSize, this.y+i*this.blockSize, this.blockSize)
-          pop()
+          shape == 'crcl' ? circle(this.x+this.blockSize*(j+.5), this.y+this.blockSize*(i+.5), this.blockSize/2) :
+          rect(this.x+this.blockSize*j, this.y+this.blockSize*i, this.blockSize)
         })()
-
+        pop()
         // draw 'squares' (players)
         if (this.map[i][j].type.charAt(0) == 'p') { // drawing players
           this.map[i][j].drawSquare(this.blockSize, this.x, this.y)
@@ -156,19 +162,25 @@ class Field {
 
   run() {
 
-    if (this.gameOver == true) return
+    if (this.gameOver == true) {
+      if (this.settings.mode == 'demoPlay') {
+        this.delay.run()
+        if (this.delay.time[1] >= 8) this.restart()
+      }
+      return
+    }
     else if (this.#getAmountOfPossibleMovesForPlayer(this.moveOnFieldFor) === 0) {
       console.log('winner is ' + this.#changeMoveFor(this.moveOnFieldFor))
       this.gameOver = true
       if (this.settings.mode != 'bot') return
-      let score = Math.ceil(this.getGameFieldGrade()/5)
+      let score = Math.floor((this.getGameFieldGrade()/Math.abs(this.getGameFieldGrade()))*Math.abs(this.getGameFieldGrade())/5) + (this.#changeMoveFor(this.moveOnFieldFor) == 'p1' ? 1 : -1)
       if (this.settings.color == 'p0') score *= -1
       if (this.settings.score + score >= 0) this.settings.score += score
       else this.settings.score = 0
-
+      this.delay.restart()
     } else if (this.settings.mode == 'bot' && this.moveOnFieldFor != this.settings.color || this.settings.mode == 'demoPlay') { //  && this.moveOnFieldFor != this.settings.color
-
-      this.#botMove(this.moveOnFieldFor)
+      this.delay.run()
+      if (this.delay.time[1] >= Math.floor(Math.random()*2)+1) {this.#botMove(this.moveOnFieldFor);this.delay.restart()}
       this.#lastMx = -1
       this.#lastMy = -1
 
@@ -196,6 +208,8 @@ class Field {
         this.#lastMx = this.mx
         this.#lastMy = this.my
         this.#addLine(this.#lastMx, this.#lastMy)
+        this.#clearAllSelected()
+        this.#showSelected()
       } else if (this.#playerActMoved == true && mouseIsPressed && this.map[this.my][this.mx].selected == true) {  // after moved
         this.#shootSquare(this.mx, this.my)
         this.#addLine(this.mx, this.my)
@@ -412,11 +426,11 @@ class Square extends Ui {
       super.pushShadow(undefined, undefined, 10)
       circle(this.x*blockSize+offsetX+blockSize/2, this.y*blockSize+offsetY+blockSize/2, blockSize/1.5)
       pop()
-      push()
-      noFill()
-      super.pushShadow()
-      circle(this.x*blockSize+offsetX+blockSize/2, this.y*blockSize+offsetY+blockSize/2, blockSize/1.5)
-      pop()
+      // push()
+      // noFill()
+      // super.pushShadow()
+      // circle(this.x*blockSize+offsetX+blockSize/2, this.y*blockSize+offsetY+blockSize/2, blockSize/1.5)
+      // pop()
 
       super.popShadow()
     }
@@ -481,11 +495,11 @@ class Button extends TextZone {
       noStroke()
       rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl)
       pop()
-      push()
-      noFill()
-      super.pushShadow()
-      rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl)
-      pop()
+      // push()
+      // noFill()
+      // super.pushShadow()
+      // rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl)
+      // pop()
       super.popShadow()
       super.update()
       let currentTextSize = this.h*.65
@@ -497,12 +511,48 @@ class Button extends TextZone {
 
     mouseIsReleased = false
     isButtonPressed() {
-      if (this.hovered && mouseIsPressed) {this.mouseIsReleased = true}
+      // console.log(this);
+      if (this.hovered && mouseIsPressed) {this.mouseIsReleased = true; return false}
       else if (this.mouseIsReleased && !mouseIsPressed && this.hovered) {this.mouseIsReleased = false;return true}
       else {this.mouseIsReleased = false;return false}
     }
 
   }
+
+class Timer {
+  constructor() {
+    this.time = [0, 0]
+    this.restartTime = true
+    this.date = Infinity
+  }
+
+  setPosition(x, y, s) {
+    this.x = x
+    this.y = y
+    this.s = s
+  }
+
+  run() {
+    let currentDate = Date.now()
+    if (this.restartTime) {
+      this.restartTime = false
+      this.date = Date.now()
+    }
+
+    if (currentDate - this.date >= 1000) {
+      this.time[1] += 1
+      if (this.time[1] >= 60) {
+        this.time[1] = 0
+        this.time[0]++
+      }
+      this.restartTime = true
+    }
+  }
+
+  restart() {
+    this.time = [0, 0]
+  }
+}
 
 class AnimationAR {  // amount and rows for 'AR'
     constructor(amount, rows) {
@@ -585,7 +635,8 @@ class Particle {
     // initialize all stuff
 let btn1,btn2, playBtnText, chooseRivalText, rivalBtn1, rivalBtn2,
   chooseRivalShow,chooseColorText, colorBtn1, colorBtn2, chooseColorShow,chooseBoardText,
-  boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, textGrade, switchMoves, switchShoots, switchLines, wallAnimation
+  boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, switchMoves, switchShoots,
+  switchLines, wallAnimation, resignBtn, rulesBtn, rulesTextHead, rulesText, textWinner, clocks
     // scenes
 const firstScene =(sideSmall, sideLarge)=> {
 
@@ -593,6 +644,7 @@ const firstScene =(sideSmall, sideLarge)=> {
       fill(255)
       demoField.setPosition(width-height < 0 ? 0 : width-height, 0, sideSmall)
       demoField.drawField(col.first, col.second)
+      demoField.run()
 
       btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10)
       btn1.setTextColor(col.bg)
@@ -604,125 +656,118 @@ const firstScene =(sideSmall, sideLarge)=> {
       btn2.useShadow(col.shadow)
       btn2.draw(col.main, col.detail, 0, undefined, 0, 0)
 
+      rulesBtn.setPosition(btn2.w/2+0, btn2.h/2, sideLarge/6, sideSmall/12)
+      rulesBtn.setTextColor(col.bg)
+      rulesBtn.useShadow(col.shadow)
+      rulesBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
+
 
       playBtnText.setSize(3)
       playBtnText.drawText(col.main, btn1.x+1.75*btn1.w, btn1.y+.5*btn1.h)
 
       if (btn1.isButtonPressed()) currentScene = 1
       else if (btn2.isButtonPressed()) currentScene = 2
+      else if (rulesBtn.isButtonPressed()) currentScene = 4
 
     }
 
 const secondScene =(sideSmall, sideLarge)=> {
-      // bg
+
+    chooseRivalText.setSize(1)
+    chooseRivalShow.setSize(1)
+
+    if (chooseRivalShow.text == 'bot') {
       fill(col.first+'55')
       rect(0, 0, width/2, height/2)
       fill(col.second+'55')
       rect(width/2, 0, width/2, height/2)
-      // lines
-      // push()
-      // stroke(col.main)
-      // strokeWeight(sideSmall/64)
-      // line(0, height/2, width, height/2)
-      // line(width/2, 0, width/2, height/2)
-      // pop()
 
-      chooseRivalText.setSize(1)
-      chooseRivalShow.setSize(1)
+      chooseColorText.setSize(1)
+      chooseColorText.drawText(col.main, width/2, chooseColorText.size*1.5, width/2)
 
-      if (chooseRivalShow.text == 'player') {
+      colorBtn1.setPosition(width/2+width/8, height/4, width/8, height/16)
+      colorBtn1.setTextColor(col.bg)
+      colorBtn1.useShadow(col.shadow)
+      colorBtn1.draw(col.main, col.detail)
 
-        fill(col.bg)
-        rect(0, 0, width, height/2)
-        fill(col.first+'55')
-        push()
-        noStroke()
-        rect(0, 0, width, height/2)
-        pop()
-        rivalBtn1.setPosition(width/2-width/8, height/4, width/8, height/16)
-        rivalBtn2.setPosition(width/2+width/8, height/4, width/8, height/16)
-        chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width)
-        chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width)
-        params.color = 'p1'
-      } else {
-        rivalBtn1.setPosition(width/8, height/4, width/8, height/16)
-        rivalBtn2.setPosition(.75*width/2, height/4, width/8, height/16)
-        chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width/2)
-        chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width/2)
-      }
+      colorBtn2.setPosition(width/2+.75*width/2, height/4, width/8, height/16)
+      colorBtn2.setTextColor(col.bg)
+      colorBtn2.useShadow(col.shadow)
+      colorBtn2.draw(col.main, col.detail)
 
-      rivalBtn1.setTextColor(col.bg)
-      rivalBtn1.useShadow(col.shadow)
-      rivalBtn1.draw(col.main, col.detail)
-
-      rivalBtn2.setTextColor(col.bg)
-      rivalBtn2.useShadow(col.shadow)
-      rivalBtn2.draw(col.main, col.detail)
-
-
-      if (rivalBtn1.isButtonPressed()) chooseRivalShow.text = 'bot'
-      else if (rivalBtn2.isButtonPressed()) chooseRivalShow.text = 'player'
-      else params.mode = chooseRivalShow.text
-
-      // ctrl+C ctrl+V
-      // second div??
-      if (chooseRivalShow.text == 'bot') {
-
-        chooseColorText.setSize(1)
-        chooseColorText.drawText(col.main, width/2, chooseColorText.size*1.5, width/2)
-
-        colorBtn1.setPosition(width/2+width/8, height/4, width/8, height/16)
-        colorBtn1.setTextColor(col.bg)
-        colorBtn1.useShadow(col.shadow)
-        colorBtn1.draw(col.main, col.detail)
-
-        colorBtn2.setPosition(width/2+.75*width/2, height/4, width/8, height/16)
-        colorBtn2.setTextColor(col.bg)
-        colorBtn2.useShadow(col.shadow)
-        colorBtn2.draw(col.main, col.detail)
-
-        chooseColorShow.setSize(1)
-        if (colorBtn1.isButtonPressed()) {params.color = 'p0';chooseColorShow.text = 'black'}
-        else if (colorBtn2.isButtonPressed()) {params.color = 'p1';chooseColorShow.text = 'white'}
-        chooseColorShow.drawText(col.main+'55', width/2, height/2-chooseRivalShow.size*1.5, width/2)
-
-      }
-      // board size
-      chooseBoardText.setSize(1)
-      chooseBoardText.drawText(col.main, 0, height/2+chooseBoardText.size*1.5, width)
-
-      boardBtn1.setPosition(width/2+width/4, height-height/4, width/16, height/16)
-      boardBtn1.setTextColor(col.bg)
-      boardBtn1.useShadow(col.shadow)
-      boardBtn1.draw(col.main, col.detail)
-
-      boardBtn2.setPosition(width/2-width/4, height-height/4, width/16, height/16)
-      boardBtn2.setTextColor(col.bg)
-      boardBtn2.useShadow(col.shadow)
-      boardBtn2.draw(col.main, col.detail)
-
-      boardBtn3.setPosition(width/2, height-height/4, width/6, height/6)
-      boardBtn3.setTextColor(col.bg)
-      boardBtn3.useShadow(col.shadow)
-      boardBtn3.draw(col.main, col.detail)
-
-
-      if (boardBtn1.isButtonPressed() && params.boardSize < 10) params.boardSize += 2
-      else if (boardBtn2.isButtonPressed() && params.boardSize > 6) params.boardSize -= 2
-      else if (boardBtn3.isButtonPressed()) {currentScene = 3; gameField = new Field(params.boardSize)}
-      else boardBtn3.text = ' '+params.boardSize
-
-      chooseBoardShow.setSize(1)
-      chooseBoardShow.drawText(col.main+'55', 0, height-chooseBoardShow.size*1.5, width)
-      // back btn
-      backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
-      backBtn.setTextColor(col.bg)
-      backBtn.useShadow(col.shadow)
-      backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
-
-      if (backBtn.isButtonPressed()) currentScene = 0
+      chooseColorShow.setSize(1)
+      if (colorBtn1.isButtonPressed()) {params.color = 'p0';chooseColorShow.text = 'black'}
+      else if (colorBtn2.isButtonPressed()) {params.color = 'p1';chooseColorShow.text = 'white'}
+      chooseColorShow.drawText(col.main+'55', width/2, height/2-chooseRivalShow.size*1.5, width/2)
 
     }
+    // ctrl+C ctrl+V
+    // second div??
+    if (chooseRivalShow.text == 'player') {
+      fill(col.first+'55')
+      rect(0, 0, width, height/2)
+
+      rivalBtn1.setPosition(width/2-width/8, height/4, width/8, height/16)
+      rivalBtn2.setPosition(width/2+width/8, height/4, width/8, height/16)
+      chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width)
+      chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width)
+      params.color = 'p1'
+    } else {
+      rivalBtn1.setPosition(width/8, height/4, width/8, height/16)
+      rivalBtn2.setPosition(.75*width/2, height/4, width/8, height/16)
+      chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width/2)
+      chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width/2)
+    }
+
+    rivalBtn1.setTextColor(col.bg)
+    rivalBtn1.useShadow(col.shadow)
+    rivalBtn1.draw(col.main, col.detail)
+
+    rivalBtn2.setTextColor(col.bg)
+    rivalBtn2.useShadow(col.shadow)
+    rivalBtn2.draw(col.main, col.detail)
+
+
+    if (rivalBtn1.isButtonPressed()) chooseRivalShow.text = 'bot'
+    else if (rivalBtn2.isButtonPressed()) chooseRivalShow.text = 'player'
+    else params.mode = chooseRivalShow.text
+
+    // board size
+    chooseBoardText.setSize(1)
+    chooseBoardText.drawText(col.main, 0, height/2+chooseBoardText.size*1.5, width)
+
+    boardBtn1.setPosition(width/2+width/4, height-height/4, width/16, height/16)
+    boardBtn1.setTextColor(col.bg)
+    boardBtn1.useShadow(col.shadow)
+    boardBtn1.draw(col.main, col.detail)
+
+    boardBtn2.setPosition(width/2-width/4, height-height/4, width/16, height/16)
+    boardBtn2.setTextColor(col.bg)
+    boardBtn2.useShadow(col.shadow)
+    boardBtn2.draw(col.main, col.detail)
+
+    boardBtn3.setPosition(width/2, height-height/4, width/6, height/6)
+    boardBtn3.setTextColor(col.bg)
+    boardBtn3.useShadow(col.shadow)
+    boardBtn3.draw(col.main, col.detail)
+
+
+    if (boardBtn1.isButtonPressed() && params.boardSize < 10) params.boardSize += 2
+    else if (boardBtn2.isButtonPressed() && params.boardSize > 6) params.boardSize -= 2
+    else if (boardBtn3.isButtonPressed()) {currentScene = 3; gameField = new Field(params.boardSize)}
+    else boardBtn3.text = ' '+params.boardSize
+
+    chooseBoardShow.setSize(1)
+    chooseBoardShow.drawText(col.main+'55', 0, height-chooseBoardShow.size*1.5, width)
+    // back btn
+    backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
+    backBtn.setTextColor(col.bg)
+    backBtn.useShadow(col.shadow)
+    backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
+
+    if (backBtn.isButtonPressed()) currentScene = 0
+
+}
 
 const thirdScene =(sideSmall, sideLarge)=> {
       // themes
@@ -802,39 +847,74 @@ const fourthScene =(sideSmall, sideLarge)=> {
       gameField.drawField(col.first, col.second)
       gameField.run()
 
-      textGrade.setSize(1)
-      if (gameField.moveOnFieldFor != params.color || gameField.linesAll.length == 0 || gameField.gameOver || params.mode != 'bot') textGrade.text = 'Grade: ' + String(gameField.getGameFieldGrade())
-      textGrade.drawText(col.main, sideSmall, 2*textGrade.size, sideDelta)
-
       if (params.mode == 'bot') {
         textScore.setSize(1)
         textScore.text = 'Score: ' + params.score*10
-        textScore.drawText(col.main, sideSmall, 2*(textGrade.size+textScore.size), sideDelta)
+        textScore.drawText(col.main, sideSmall, 1.5*textScore.size, sideDelta)
       }
 
       if (gameField.gameOver) {
+        textWinner.setSize(2)
+        textWinner.text = gameField.moveOnFieldFor == 'p1' ? 'Winner is black' : 'Winner is White'
+        textWinner.drawText(col.main, sideSmall, 4*textWinner.size, sideDelta)
+
         restartBtn.setPosition(sideSmall+sideDelta/2, height-height/4, height/6, height/6)
         restartBtn.setTextColor(col.bg)
         restartBtn.useShadow(col.shadow)
         restartBtn.draw(col.main, col.detail)
 
         if (restartBtn.isButtonPressed()) currentScene = 1
+      } else {
+        if (params.mode != 'bot') {
+          textWinner.setSize(2)
+          textWinner.text = 'Move for: '
+          textWinner.drawText(col.main, sideSmall, 4*textWinner.size, sideDelta)
+          let icon = new Square(0,0, gameField.moveOnFieldFor)
+          icon.drawSquare(height/6, sideSmall+sideDelta/2-height/12, 5*textWinner.size)
+        } else {
+          clocks.setPosition(sideSmall+sideDelta/2-height/12, height/2.5, height/6)
+          if (gameField.moveOnFieldFor == params.color) clocks.run()
+        }
+        // resign btn
+        resignBtn.setPosition(width-resignBtn.w/2+0, height-resignBtn.h/2, sideLarge/8, sideSmall/12)
+        resignBtn.setTextColor(col.bg)
+        resignBtn.useShadow(col.shadow)
+        resignBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
+
+        if (resignBtn.isButtonPressed()) {params.score <= 1 ? undefined : params.score -= 2; currentScene = 1}
       }
+
+
     }
+
+const fifthScene =(sideSmall, sideLarge)=> {
+  rulesTextHead.setSize(1)
+  rulesTextHead.drawText(col.main, 0, rulesTextHead.size, width)
+
+  rulesText.setSize(0)
+  rulesText.drawText(col.main, 2*rulesText.size, rulesText.size*3, width-4*rulesText.size)
+  // back btn
+  backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
+  backBtn.setTextColor(col.bg)
+  backBtn.useShadow(col.shadow)
+  backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
+
+  if (backBtn.isButtonPressed()) currentScene = 0
+}
 
 const warningScene =()=> {
       push()
-      background(255)
       noStroke()
-      fill(0)
-      let warningAlert = 'please, use horizontal orientation\nof your device'
-      textSize(width/20)
+      fill(col.main)
+      textSize(width/10)
       textAlign(CENTER, CENTER)
-      text(warningAlert, 0, height/2, width)
+      text('use horizontal orientation', 0, height/2, width)
       pop()
     }
 
 function setup() {
+      mouseX = -1
+      mouseY = -1
       strokeJoin(ROUND)
       // all stuff
       wallAnimation = new AnimationAR(20, 10)
@@ -843,6 +923,7 @@ function setup() {
       btn2 = new Button('Settings') // settings
       playBtnText = new TextZone('Play') // PLAY  btn text
       demoField = new Field(6, {color: 'p1', mode: 'demoPlay', boardSize: 6, score: null})
+      rulesBtn = new Button('rules')
 
       chooseRivalText = new TextZone('Choose your rival') //
       rivalBtn1 = new Button('Bot') // rival btn
@@ -861,9 +942,11 @@ function setup() {
       chooseBoardShow = new TextZone('tap to start') // showing board below
       backBtn = new Button('back') // settings
 
-      textGrade = new TextZone('')
+      textWinner = new TextZone('')
       textScore = new TextZone('')
       restartBtn = new Button(' ⟳')
+      resignBtn = new Button('resign')
+      clocks = new Timer()
 
       switchMoves = new Button('moves')
       switchShoots = new Button('shoots')
@@ -876,18 +959,21 @@ function setup() {
       graphicsText = new TextZone('Graphics')
       themesText = new TextZone('Themes')
 
+      rulesTextHead = new TextZone('Rules')
+      rulesText = new TextZone('White moves first, and the players alternate moves thereafter. Each move consists of two parts. First, one moves one of one\'s own amazons one or more empty squares in a straight line (orthogonally or diagonally), exactly as a queen moves in chess; it may not cross or enter a square occupied by an amazon of either color or an arrow. Second, after moving, the amazon shoots an arrow from its landing square to another square, using another queenlike move. This arrow may travel in any orthogonal or diagonal direction (even backwards along the same path the amazon just traveled, into or across the starting square if desired). An arrow, like an amazon, cannot cross or enter a square where another arrow has landed or an amazon of either color stands. The square where the arrow lands is marked to show that it can no longer be used. The last player to be able to make a move wins. Draws are impossible. ')
+
     }
 
 function draw() {
       createCanvas(windowWidth, windowHeight)
-      if (width/height < 5/3) {warningScene(); return}
-
       background(col.bg)
       stroke(col.shadow)
       strokeWeight(height/450)
 
       wallAnimation.update()
       wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000010'))
+
+      if (width/height < 5/3) {warningScene(); return}
 
       switch (currentScene) {
         case 0: // main screen
@@ -901,6 +987,9 @@ function draw() {
         break;
         case 3: // game
         fourthScene(Math.min(width, height), Math.max(width, height))
+        break;
+        case 4: // rules
+        fifthScene(Math.min(width, height), Math.max(width, height))
         break;
       }
 
