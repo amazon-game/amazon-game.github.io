@@ -61,13 +61,11 @@ disableOption = [false, false, false]  // disable or enable something in setting
 let col = themes[currentTheme]
 
 class Field {
-  linesAll = []
   grade = null
   #amountOfPossibleMoves
   constructor(size=6, settings=params) {
     this.size = size // board size (size)
     this.settings = settings
-    this.delay = new Timer()
 
     this.restart()
   }
@@ -76,6 +74,8 @@ class Field {
     this.map = []
     this.moveOnFieldFor = 'p1'
     this.gameOver = false
+    this.delay = new Timer()
+    this.linesAll = []
 
     for (let i = 0; i < this.size; i++) {
       let k = []
@@ -143,7 +143,14 @@ class Field {
       this.#drawLines(this.moveOnFieldFor == 'p1' ? col.dark : col.light, this.blockSize)
     }
 
+  }
 
+  aboutMap() {
+    let res = {empty: 0, p0: 0, p1: 0, shooted: 0}
+    this.map.forEach(y => {y.forEach(el => {
+      res[el.type] += 1
+    })})
+    return res
   }
 
   #lastMx = -1
@@ -173,7 +180,7 @@ class Field {
       console.log('winner is ' + this.#changeMoveFor(this.moveOnFieldFor))
       this.gameOver = true
       if (this.settings.mode != 'bot') return
-      let score = Math.floor((this.getGameFieldGrade()/Math.abs(this.getGameFieldGrade()))*Math.abs(this.getGameFieldGrade())/5) + (this.#changeMoveFor(this.moveOnFieldFor) == 'p1' ? 1 : -1)
+      let score = Math.floor(Math.abs(this.getGameFieldGrade())/5)*((this.getGameFieldGrade()/Math.abs(this.getGameFieldGrade())) || 1) + (this.#changeMoveFor(this.moveOnFieldFor) == 'p1' ? 1 : -1)
       if (this.settings.color == 'p0') score *= -1
       if (this.settings.score + score >= 0) this.settings.score += score
       else this.settings.score = 0
@@ -444,8 +451,8 @@ class TextZone extends Ui {
     }
 
     drawText(color, x, y, w=-1, s=this.size) {
-      this.xt = x
-      this.yt = y
+      // this.xt = x
+      // this.yt = y
 
       push()
       noStroke()
@@ -487,6 +494,8 @@ class Button extends TextZone {
     }
 
     draw(color, hoverColor=color, borderRadius_tl=10, borderRadius_tr=10, borderRadius_br=10, borderRadius_bl=10) {
+      this.setTextColor(col.bg)
+      this.useShadow(col.shadow)
       push()
       if (mouseX >= this.x && mouseX <= this.x+this.w && mouseY >= this.y && mouseY <= this.y+this.h) {fill(hoverColor);this.hovered = true}
       else {fill(color);this.hovered = false}
@@ -526,10 +535,16 @@ class Timer {
     this.date = Infinity
   }
 
-  setPosition(x, y, s) {
+  setPosition(x, y, w) {
     this.x = x
     this.y = y
-    this.s = s
+    this.w = w
+  }
+
+  draw() {
+    let clockText = new TextZone(`${this.time[0] < 10 ? '0'+this.time[0] : this.time[0]}:${this.time[1] < 10 ? '0'+this.time[1] : this.time[1]}`)
+    clockText.setSize(3)
+    clockText.drawText(col.main, this.x, this.y, this.w)
   }
 
   run() {
@@ -550,6 +565,7 @@ class Timer {
   }
 
   restart() {
+    this.restartTime = true
     this.time = [0, 0]
   }
 }
@@ -636,7 +652,8 @@ class Particle {
 let btn1,btn2, playBtnText, chooseRivalText, rivalBtn1, rivalBtn2,
   chooseRivalShow,chooseColorText, colorBtn1, colorBtn2, chooseColorShow,chooseBoardText,
   boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, switchMoves, switchShoots,
-  switchLines, wallAnimation, resignBtn, rulesBtn, rulesTextHead, rulesText, textWinner, clocks
+  switchLines, wallAnimation, resignBtn, rulesBtn, rulesTextHead, rulesText, textWinner, clocks, editorBtn,
+  brush1, brush2, brush3, brush4, playButton
     // scenes
 const firstScene =(sideSmall, sideLarge)=> {
 
@@ -647,20 +664,13 @@ const firstScene =(sideSmall, sideLarge)=> {
       demoField.run()
 
       btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10)
-      btn1.setTextColor(col.bg)
-      btn1.useShadow(col.shadow)
       btn1.draw(col.main, col.detail)
 
       btn2.setPosition(btn2.w/2+0, height-btn2.h/2, sideLarge/6, sideSmall/12)
-      btn2.setTextColor(col.bg)
-      btn2.useShadow(col.shadow)
       btn2.draw(col.main, col.detail, 0, undefined, 0, 0)
 
       rulesBtn.setPosition(btn2.w/2+0, btn2.h/2, sideLarge/6, sideSmall/12)
-      rulesBtn.setTextColor(col.bg)
-      rulesBtn.useShadow(col.shadow)
       rulesBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
-
 
       playBtnText.setSize(3)
       playBtnText.drawText(col.main, btn1.x+1.75*btn1.w, btn1.y+.5*btn1.h)
@@ -686,13 +696,9 @@ const secondScene =(sideSmall, sideLarge)=> {
       chooseColorText.drawText(col.main, width/2, chooseColorText.size*1.5, width/2)
 
       colorBtn1.setPosition(width/2+width/8, height/4, width/8, height/16)
-      colorBtn1.setTextColor(col.bg)
-      colorBtn1.useShadow(col.shadow)
       colorBtn1.draw(col.main, col.detail)
 
       colorBtn2.setPosition(width/2+.75*width/2, height/4, width/8, height/16)
-      colorBtn2.setTextColor(col.bg)
-      colorBtn2.useShadow(col.shadow)
       colorBtn2.draw(col.main, col.detail)
 
       chooseColorShow.setSize(1)
@@ -719,12 +725,8 @@ const secondScene =(sideSmall, sideLarge)=> {
       chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width/2)
     }
 
-    rivalBtn1.setTextColor(col.bg)
-    rivalBtn1.useShadow(col.shadow)
     rivalBtn1.draw(col.main, col.detail)
 
-    rivalBtn2.setTextColor(col.bg)
-    rivalBtn2.useShadow(col.shadow)
     rivalBtn2.draw(col.main, col.detail)
 
 
@@ -737,20 +739,13 @@ const secondScene =(sideSmall, sideLarge)=> {
     chooseBoardText.drawText(col.main, 0, height/2+chooseBoardText.size*1.5, width)
 
     boardBtn1.setPosition(width/2+width/4, height-height/4, width/16, height/16)
-    boardBtn1.setTextColor(col.bg)
-    boardBtn1.useShadow(col.shadow)
     boardBtn1.draw(col.main, col.detail)
 
     boardBtn2.setPosition(width/2-width/4, height-height/4, width/16, height/16)
-    boardBtn2.setTextColor(col.bg)
-    boardBtn2.useShadow(col.shadow)
     boardBtn2.draw(col.main, col.detail)
 
     boardBtn3.setPosition(width/2, height-height/4, width/6, height/6)
-    boardBtn3.setTextColor(col.bg)
-    boardBtn3.useShadow(col.shadow)
     boardBtn3.draw(col.main, col.detail)
-
 
     if (boardBtn1.isButtonPressed() && params.boardSize < 10) params.boardSize += 2
     else if (boardBtn2.isButtonPressed() && params.boardSize > 6) params.boardSize -= 2
@@ -759,13 +754,16 @@ const secondScene =(sideSmall, sideLarge)=> {
 
     chooseBoardShow.setSize(1)
     chooseBoardShow.drawText(col.main+'55', 0, height-chooseBoardShow.size*1.5, width)
+    // editor btn
+    editorBtn.setPosition(width-editorBtn.w/2+0, height-editorBtn.h/2, sideLarge/6, sideSmall/12)
+    editorBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
+
     // back btn
     backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
-    backBtn.setTextColor(col.bg)
-    backBtn.useShadow(col.shadow)
     backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
 
     if (backBtn.isButtonPressed()) currentScene = 0
+    else if (editorBtn.isButtonPressed()) {currentScene = 5; gameField = new Field(params.boardSize)}
 
 }
 
@@ -776,13 +774,9 @@ const thirdScene =(sideSmall, sideLarge)=> {
 
       // theme's buttons
       boardBtn1.setPosition(width/2+width/4, height/4, width/16, height/16)
-      boardBtn1.setTextColor(col.bg)
-      boardBtn1.useShadow(col.shadow)
       boardBtn1.draw(col.main, col.detail)
 
       boardBtn2.setPosition(width/2-width/4, height/4, width/16, height/16)
-      boardBtn2.setTextColor(col.bg)
-      boardBtn2.useShadow(col.shadow)
       boardBtn2.draw(col.main, col.detail)
 
       if (boardBtn1.isButtonPressed() && currentTheme < themes.length-1) col = themes[++currentTheme]
@@ -790,18 +784,12 @@ const thirdScene =(sideSmall, sideLarge)=> {
 
       // switches
       switchMoves.setPosition(width/4-switchMoves.w/2, height-height/4, width/6, height/8)
-      switchMoves.setTextColor(col.bg)
-      switchMoves.useShadow(col.shadow)
       switchMoves.draw(col.main, col.detail)
 
       switchShoots.setPosition(width/2, height-height/4, width/6, height/8)
-      switchShoots.setTextColor(col.bg)
-      switchShoots.useShadow(col.shadow)
       switchShoots.draw(col.main, col.detail)
 
       switchLines.setPosition(width-width/4+switchLines.w/2, height-height/4, width/6, height/8)
-      switchLines.setTextColor(col.bg)
-      switchLines.useShadow(col.shadow)
       switchLines.draw(col.main, col.detail)
 
       if (switchMoves.isButtonPressed()) disableOption[0] = !disableOption[0]
@@ -828,8 +816,6 @@ const thirdScene =(sideSmall, sideLarge)=> {
 
       // back btn
       backBtn.setPosition(backBtn.w/2+0, backBtn.h/2, sideLarge/8, sideSmall/12)
-      backBtn.setTextColor(col.bg)
-      backBtn.useShadow(col.shadow)
       backBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
 
       if (backBtn.isButtonPressed()) currentScene = 0
@@ -854,13 +840,12 @@ const fourthScene =(sideSmall, sideLarge)=> {
       }
 
       if (gameField.gameOver) {
+        clocks.restart()
         textWinner.setSize(2)
         textWinner.text = gameField.moveOnFieldFor == 'p1' ? 'Winner is black' : 'Winner is White'
-        textWinner.drawText(col.main, sideSmall, 4*textWinner.size, sideDelta)
+        textWinner.drawText(col.main, sideSmall, 6*textWinner.size, sideDelta)
 
         restartBtn.setPosition(sideSmall+sideDelta/2, height-height/4, height/6, height/6)
-        restartBtn.setTextColor(col.bg)
-        restartBtn.useShadow(col.shadow)
         restartBtn.draw(col.main, col.detail)
 
         if (restartBtn.isButtonPressed()) currentScene = 1
@@ -872,16 +857,15 @@ const fourthScene =(sideSmall, sideLarge)=> {
           let icon = new Square(0,0, gameField.moveOnFieldFor)
           icon.drawSquare(height/6, sideSmall+sideDelta/2-height/12, 5*textWinner.size)
         } else {
-          clocks.setPosition(sideSmall+sideDelta/2-height/12, height/2.5, height/6)
+          clocks.setPosition(sideSmall, height/2.5, sideDelta)
+          clocks.draw()
           if (gameField.moveOnFieldFor == params.color) clocks.run()
         }
         // resign btn
         resignBtn.setPosition(width-resignBtn.w/2+0, height-resignBtn.h/2, sideLarge/8, sideSmall/12)
-        resignBtn.setTextColor(col.bg)
-        resignBtn.useShadow(col.shadow)
         resignBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
 
-        if (resignBtn.isButtonPressed()) {params.score <= 1 ? undefined : params.score -= 2; currentScene = 1}
+        if (resignBtn.isButtonPressed()) {params.score <= 1 ? undefined : params.score -= 2; currentScene = 1; clocks.restart()}
       }
 
 
@@ -895,11 +879,92 @@ const fifthScene =(sideSmall, sideLarge)=> {
   rulesText.drawText(col.main, 2*rulesText.size, rulesText.size*3, width-4*rulesText.size)
   // back btn
   backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
-  backBtn.setTextColor(col.bg)
-  backBtn.useShadow(col.shadow)
   backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
 
   if (backBtn.isButtonPressed()) currentScene = 0
+}
+
+let activeBrush = 3
+const sixthScene =(sideSmall, sideLarge)=> {
+  let widthBar = height/6
+  let fieldSide = sideSmall-widthBar
+  let btnsWidth = fieldSide/8
+  push()
+  noFill()
+  rect(width/2-fieldSide/2, 0, fieldSide)
+  pop()
+  gameField.setPosition(width/2-fieldSide/2, 0, fieldSide)
+  gameField.drawField(col.first, col.second)
+
+  // showing active brush
+  push()
+  fill('#ffffff33')
+  rect((width-fieldSide)/2+activeBrush/4*fieldSide, fieldSide, 1/4*fieldSide)
+  pop()
+  // brushes
+  let icon = new Square(0, 0, 'p1')
+  brush1.setPosition((width-fieldSide*(1-2*0/4-1/4))/2, fieldSide+widthBar/2, btnsWidth, widthBar/2)
+  brush1.draw(col.main, col.detail)
+  icon.drawSquare(widthBar/3, (width-fieldSide*(1-2*0/4-1/4))/2-widthBar/6, fieldSide+widthBar/2-widthBar/6)
+
+  icon = new Square(0, 0, 'p0')
+  brush2.setPosition((width-fieldSide*(1-2*1/4-1/4))/2, fieldSide+widthBar/2, btnsWidth, widthBar/2)
+  brush2.draw(col.main, col.detail)
+  icon.drawSquare(widthBar/3, (width-fieldSide*(1-2*1/4-1/4))/2-widthBar/6, fieldSide+widthBar/2-widthBar/6)
+
+  brush3.setPosition((width-fieldSide*(1-2*2/4-1/4))/2, fieldSide+widthBar/2, btnsWidth, widthBar/2)
+  brush3.draw(col.main, col.detail)
+  push()
+  fill(col.first)
+  rect((width-fieldSide*(1-2*2/4-1/4))/2-widthBar/12, fieldSide+widthBar/2-widthBar/12, widthBar/6)
+  pop()
+
+  brush4.setPosition((width-fieldSide*(1-2*3/4-1/4))/2, fieldSide+widthBar/2, btnsWidth, widthBar/2)
+  brush4.draw(col.main, col.detail)
+  push()
+  fill(col.bg)
+  noStroke()
+  rect((width-fieldSide*(1-2*3/4-1/4))/2-widthBar/12, fieldSide+widthBar/2-widthBar/12, widthBar/6)
+  pop()
+
+  // btns
+
+  if (brush1.isButtonPressed()) activeBrush = 0
+  else if (brush2.isButtonPressed()) activeBrush = 1
+  else if (brush3.isButtonPressed()) activeBrush = 2
+  else if (brush4.isButtonPressed()) activeBrush = 3
+
+  // mouse
+
+  if (mouseIsPressed && mouseX > (width-fieldSide)/2 && mouseX < width-(width-fieldSide)/2 && mouseY > 0 && mouseY < fieldSide) {
+    let mx = Math.floor((mouseX-(width-fieldSide)/2)/(fieldSide/params.boardSize))
+    let my = Math.floor(mouseY/(fieldSide/params.boardSize))
+
+    switch (activeBrush) {
+      case 0:
+      gameField.map[my][mx].type = 'p1'
+      break
+      case 1:
+      gameField.map[my][mx].type = 'p0'
+      break
+      case 2:
+      gameField.map[my][mx].type = 'empty'
+      break
+      case 3:
+      gameField.map[my][mx].type = 'shooted'
+      break
+    }
+  }
+
+  // back btn
+  backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
+  backBtn.draw(col.main, col.detail, 0, undefined, 0, 0)
+  // play this position btn
+  playButton.setPosition(width-backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
+  playButton.draw(col.main, col.detail, undefined, 0, 0, 0)
+
+  if (backBtn.isButtonPressed()) currentScene = 1
+  else if (playButton.isButtonPressed() && gameField.aboutMap().p0 > 0 && gameField.aboutMap().p1 > 0) currentScene = 3
 }
 
 const warningScene =()=> {
@@ -934,6 +999,13 @@ function setup() {
       colorBtn1 = new Button('black') // color btn
       colorBtn2 = new Button('white') // color btn
       chooseColorShow = new TextZone(params.color == 'p1' ? 'white' : 'black') // showing color below
+
+      editorBtn = new Button('Edit board')
+      brush1 = new Button('')
+      brush2 = new Button('')
+      brush3 = new Button('')
+      brush4 = new Button('')
+      playButton = new Button('Play')
 
       chooseBoardText = new TextZone('Board size') //
       boardBtn1 = new Button(' ▶') // board btn ++
@@ -990,6 +1062,9 @@ function draw() {
         break;
         case 4: // rules
         fifthScene(Math.min(width, height), Math.max(width, height))
+        break;
+        case 5: // editor
+        sixthScene(Math.min(width, height), Math.max(width, height))
         break;
       }
 
