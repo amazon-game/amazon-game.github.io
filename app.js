@@ -164,15 +164,15 @@ class Field {
   #lastMx = -1
   #lastMy = -1
   #playerActMoved = false
-  #directions = [  // from top left to top to top right to right ...
-    {x: -1, y: -1},
+  #directions = [  // first - orthogonally, than diagonally ...
     {x: 0, y: -1},
-    {x: 1, y: -1},
     {x: 1, y: 0},
-    {x: 1, y: 1},
     {x: 0, y: 1},
-    {x: -1, y: 1},
-    {x: -1, y: 0}
+    {x: -1, y: 0},
+    {x: -1, y: -1},
+    {x: 1, y: -1},
+    {x: 1, y: 1},
+    {x: -1, y: 1}
   ]
 
   run() {
@@ -185,7 +185,7 @@ class Field {
       return
     }
     else if (this.#getAmountOfPossibleMovesForPlayer(this.moveOnFieldFor) === 0) {
-      console.log('winner is ' + this.#changeMoveFor(this.moveOnFieldFor))
+      // console.log('winner is ' + this.#changeMoveFor(this.moveOnFieldFor))
       this.gameOver = true
       if (this.settings.mode != 'bot') return
       let score = Math.floor(Math.abs(this.getGameFieldGrade())/5)*((this.getGameFieldGrade()/Math.abs(this.getGameFieldGrade())) || 1) + (this.#changeMoveFor(this.moveOnFieldFor) == 'p1' ? 1 : -1)
@@ -315,7 +315,7 @@ class Field {
     #searchMove(playerColor, depth) {
       let playerSide = Number(playerColor.charAt(playerColor.length-1))
       if (playerSide == 0) playerSide = -1
-      if (depth == 0) return this.getGameFieldGrade()/(this.#getAmountOfControlledSquaresByPlayer(this.#changeMoveFor(playerColor)) || 10**-10)
+      if (depth == 0) return this.getGameFieldGrade()/(this.#getAmountOfControlledSquaresByPlayer(playerColor) || 10**-6)
 
       let piecesMoves = this.#getArrayOfMoves(playerColor)
 
@@ -1075,7 +1075,7 @@ function draw() {
       strokeWeight(height/450)
 
       wallAnimation.update()
-      wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000010'))
+      wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
 
       if (width/height < 5/3) {warningScene(); return}
 
