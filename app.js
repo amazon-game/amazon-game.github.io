@@ -152,6 +152,14 @@ class Field {
     })})
     return res
   }
+  fillMap(by, skip=['']) {
+    for (let y = 0; y < this.map.length; y++) {
+      for (let x = 0; x < this.map[y].length; x++) {
+
+          if (!skip.includes(this.map[y][x].type)) this.map[y][x].type = by
+      }
+    }
+  }
 
   #lastMx = -1
   #lastMy = -1
@@ -172,7 +180,7 @@ class Field {
     if (this.gameOver == true) {
       if (this.settings.mode == 'demoPlay') {
         this.delay.run()
-        if (this.delay.time[1] >= 8) this.restart()
+        if (this.delay.time[1] >= 3) this.restart()
       }
       return
     }
@@ -187,7 +195,7 @@ class Field {
       this.delay.restart()
     } else if (this.settings.mode == 'bot' && this.moveOnFieldFor != this.settings.color || this.settings.mode == 'demoPlay') { //  && this.moveOnFieldFor != this.settings.color
       this.delay.run()
-      if (this.delay.time[1] >= Math.floor(Math.random()*2)+1) {this.#botMove(this.moveOnFieldFor);this.delay.restart()}
+      if (this.delay.time[1] >= 1) {this.#botMove(this.moveOnFieldFor);this.delay.restart()}
       this.#lastMx = -1
       this.#lastMy = -1
 
@@ -307,7 +315,7 @@ class Field {
     #searchMove(playerColor, depth) {
       let playerSide = Number(playerColor.charAt(playerColor.length-1))
       if (playerSide == 0) playerSide = -1
-      if (depth == 0) return this.getGameFieldGrade()
+      if (depth == 0) return this.getGameFieldGrade()/(this.#getAmountOfControlledSquaresByPlayer(this.#changeMoveFor(playerColor)) || 10**-10)
 
       let piecesMoves = this.#getArrayOfMoves(playerColor)
 
@@ -451,8 +459,6 @@ class TextZone extends Ui {
     }
 
     drawText(color, x, y, w=-1, s=this.size) {
-      // this.xt = x
-      // this.yt = y
 
       push()
       noStroke()
@@ -653,7 +659,7 @@ let btn1,btn2, playBtnText, chooseRivalText, rivalBtn1, rivalBtn2,
   chooseRivalShow,chooseColorText, colorBtn1, colorBtn2, chooseColorShow,chooseBoardText,
   boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, switchMoves, switchShoots,
   switchLines, wallAnimation, resignBtn, rulesBtn, rulesTextHead, rulesText, textWinner, clocks, editorBtn,
-  brush1, brush2, brush3, brush4, playButton
+  brush1, brush2, brush3, brush4, playButton, clearPiecesBtn, clearBoardBtn, fillBoardBtn, gradeText
     // scenes
 const firstScene =(sideSmall, sideLarge)=> {
 
@@ -843,7 +849,7 @@ const fourthScene =(sideSmall, sideLarge)=> {
         clocks.restart()
         textWinner.setSize(2)
         textWinner.text = gameField.moveOnFieldFor == 'p1' ? 'Winner is black' : 'Winner is White'
-        textWinner.drawText(col.main, sideSmall, 6*textWinner.size, sideDelta)
+        textWinner.drawText(col.main, sideSmall, (height-height/4)/2, sideDelta)
 
         restartBtn.setPosition(sideSmall+sideDelta/2, height-height/4, height/6, height/6)
         restartBtn.draw(col.main, col.detail)
@@ -889,6 +895,28 @@ const sixthScene =(sideSmall, sideLarge)=> {
   let widthBar = height/6
   let fieldSide = sideSmall-widthBar
   let btnsWidth = fieldSide/8
+
+  // clear buttons
+
+  clearPiecesBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2)-clearPiecesBtn.h, sideLarge/6, sideLarge/32)
+  clearPiecesBtn.draw(col.main, col.detail, undefined, undefined, 0, 0)
+
+  fillBoardBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2), sideLarge/6, sideLarge/32)
+  fillBoardBtn.draw(col.main, col.detail, 0, 0, 0, 0)
+
+  clearBoardBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2)+clearBoardBtn.h, sideLarge/6, sideLarge/32)
+  clearBoardBtn.draw(col.main, col.detail, 0, 0, undefined, undefined)
+
+
+  if (clearPiecesBtn.isButtonPressed()) gameField.fillMap('empty', ['shooted'])
+  else if (clearBoardBtn.isButtonPressed()) gameField.fillMap('shooted')
+  else if (fillBoardBtn.isButtonPressed()) gameField.fillMap('empty', ['p0', 'p1'])
+
+  // grade text
+  gradeText.setSize(1)
+  gradeText.text = 'Grade: ' + gameField.getGameFieldGrade()
+  gradeText.drawText(col.main, (width+fieldSide)/2, floor(fieldSide/2), (width-fieldSide)/2)
+
   push()
   noFill()
   rect(width/2-fieldSide/2, 0, fieldSide)
@@ -1006,6 +1034,10 @@ function setup() {
       brush3 = new Button('')
       brush4 = new Button('')
       playButton = new Button('Play')
+      clearPiecesBtn = new Button('Clear pieces')
+      clearBoardBtn = new Button('Clear board')
+      fillBoardBtn = new Button('Fill board')
+      gradeText = new TextZone('')
 
       chooseBoardText = new TextZone('Board size') //
       boardBtn1 = new Button(' ▶') // board btn ++
