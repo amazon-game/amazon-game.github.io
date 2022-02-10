@@ -512,7 +512,7 @@ class Button extends TextZone {
       pop()
       super.popShadow()
       super.update()
-      let currentTextSize = width < height ? this.h*.65 : this.w*.15
+      let currentTextSize = this.h*.65//this.w > 2.65*textWidth(this.text) ? this.h*.65 : 100
       if (mouseIsPressed && this.hovered) {fill('#00000033');rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl);
       currentTextSize *=.9}
       super.drawText(this.textColor, this.x, this.y+this.h/2, this.w, currentTextSize)
@@ -664,18 +664,34 @@ const firstScene =(sideSmall, sideLarge)=> {
       demoField.drawField(col.first, col.second)
       demoField.run()
 
-      width > height ? btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10) :
-      btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall*1.5, sideLarge/10, sideLarge/10);
-      btn1.draw(col.main, col.detail)
-
       btn2.setPosition(btn2.w/2+0, height-btn2.h/2, sideLarge/6, sideSmall/12)
       btn2.draw(col.main, col.detail, 0, undefined, 0, 0)
 
-      rulesBtn.setPosition(btn2.w/2+0, btn2.h/2, sideLarge/6, sideSmall/12)
-      rulesBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
-
       playBtnText.setSize(3)
-      playBtnText.drawText(col.main, btn1.x+1.75*btn1.w, btn1.y+.5*btn1.h)
+
+      width > height ?
+      (()=>{
+        btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10)
+
+        rulesBtn.setPosition(rulesBtn.w/2+0, rulesBtn.h/2, sideLarge/6, sideSmall/12)
+        rulesBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
+
+        playBtnText.drawText(col.main, btn1.x+1.75*btn1.w, btn1.y+.5*btn1.h)
+      })()
+      :
+      (()=>{
+        btn1.setPosition(width/2, sideSmall+(sideLarge-sideSmall)/2, sideLarge/10, sideLarge/10)
+
+        rulesBtn.setPosition(width-rulesBtn.w/2+0, height-rulesBtn.h/2, sideLarge/6, sideSmall/12)
+        rulesBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
+
+        playBtnText.drawText(col.main, width/2, btn1.y+1.5*btn1.h)
+      })()
+
+      btn1.draw(col.main, col.detail)
+
+
+
 
       if (btn1.isButtonPressed()) currentScene = 1
       else if (btn2.isButtonPressed()) currentScene = 2
@@ -684,6 +700,8 @@ const firstScene =(sideSmall, sideLarge)=> {
     }
 
 const secondScene =(sideSmall, sideLarge)=> {
+
+    let upperBtnsWidth = width < height ? sideSmall/6 : sideLarge/8, upperBtnsHeight = sideSmall/16
 
     chooseRivalText.setSize(1)
     chooseRivalShow.setSize(1)
@@ -695,18 +713,18 @@ const secondScene =(sideSmall, sideLarge)=> {
       rect(width/2, 0, width/2, height/2)
 
       chooseColorText.setSize(1)
-      chooseColorText.drawText(col.main, width/2, chooseColorText.size*1.5, width/2)
+      chooseColorText.drawText(col.main, width/2, colorBtn1.y-colorBtn1.h*.5, width/2)
 
-      colorBtn1.setPosition(width/2+width/8, height/4, width/8, height/16)
+      colorBtn1.setPosition(width/2+width/8, height/4, upperBtnsWidth, upperBtnsHeight)
       colorBtn1.draw(col.main, col.detail)
 
-      colorBtn2.setPosition(width/2+.75*width/2, height/4, width/8, height/16)
+      colorBtn2.setPosition(width/2+.75*width/2, height/4, upperBtnsWidth, upperBtnsHeight)
       colorBtn2.draw(col.main, col.detail)
 
       chooseColorShow.setSize(1)
       if (colorBtn1.isButtonPressed()) {params.color = 'p0';chooseColorShow.text = 'black'}
       else if (colorBtn2.isButtonPressed()) {params.color = 'p1';chooseColorShow.text = 'white'}
-      chooseColorShow.drawText(col.main+'55', width/2, height/2-chooseRivalShow.size*1.5, width/2)
+      chooseColorShow.drawText(col.main+'55', width/2, colorBtn1.y+colorBtn1.h*1.5, width/2)
 
     }
     // ctrl+C ctrl+V
@@ -715,16 +733,16 @@ const secondScene =(sideSmall, sideLarge)=> {
       fill(col.first+'55')
       rect(0, 0, width, height/2)
 
-      rivalBtn1.setPosition(width/2-width/8, height/4, width/8, height/16)
-      rivalBtn2.setPosition(width/2+width/8, height/4, width/8, height/16)
-      chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width)
-      chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width)
+      rivalBtn1.setPosition(width/2-width/8, height/4, upperBtnsWidth, upperBtnsHeight)
+      rivalBtn2.setPosition(width/2+width/8, height/4, upperBtnsWidth, upperBtnsHeight)
+      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h*1.5, width)
+      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-rivalBtn1.h*.5, width)
       params.color = 'p1'
     } else {
-      rivalBtn1.setPosition(width/8, height/4, width/8, height/16)
-      rivalBtn2.setPosition(.75*width/2, height/4, width/8, height/16)
-      chooseRivalShow.drawText(col.main+'55', 0, height/2-chooseRivalShow.size*1.5, width/2)
-      chooseRivalText.drawText(col.main, 0, chooseRivalText.size*1.5, width/2)
+      rivalBtn1.setPosition(width/8, height/4, upperBtnsWidth, upperBtnsHeight)
+      rivalBtn2.setPosition(.75*width/2, height/4, upperBtnsWidth, upperBtnsHeight)
+      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h*1.5, width/2)
+      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-rivalBtn1.h*.5, width/2)
     }
 
     rivalBtn1.draw(col.main, col.detail)
@@ -737,17 +755,17 @@ const secondScene =(sideSmall, sideLarge)=> {
     else params.mode = chooseRivalShow.text
 
     // board size
-    chooseBoardText.setSize(1)
-    chooseBoardText.drawText(col.main, 0, height/2+chooseBoardText.size*1.5, width)
-
-    boardBtn1.setPosition(width/2+width/4, height-height/4, width/16, height/16)
+    boardBtn1.setPosition(width/2+width/4, height-height/4, sideSmall/12, sideSmall/12)
     boardBtn1.draw(col.main, col.detail)
 
-    boardBtn2.setPosition(width/2-width/4, height-height/4, width/16, height/16)
+    boardBtn2.setPosition(width/2-width/4, height-height/4, sideSmall/12, sideSmall/12)
     boardBtn2.draw(col.main, col.detail)
 
-    boardBtn3.setPosition(width/2, height-height/4, width/6, height/6)
+    boardBtn3.setPosition(width/2, height-height/4, sideLarge/6, sideSmall/6)
     boardBtn3.draw(col.main, col.detail)
+
+    chooseBoardText.setSize(1)
+    chooseBoardText.drawText(col.main, 0, boardBtn3.y-boardBtn3.h*.25, width)
 
     if (boardBtn1.isButtonPressed() && params.boardSize < 10) params.boardSize += 2
     else if (boardBtn2.isButtonPressed() && params.boardSize > 6) params.boardSize -= 2
@@ -755,7 +773,7 @@ const secondScene =(sideSmall, sideLarge)=> {
     else boardBtn3.text = ' '+params.boardSize
 
     chooseBoardShow.setSize(1)
-    chooseBoardShow.drawText(col.main+'55', 0, height-chooseBoardShow.size*1.5, width)
+    chooseBoardShow.drawText(col.main+'55', 0, boardBtn3.y+boardBtn3.h*1.25, width)
     // editor btn
     editorBtn.setPosition(width-editorBtn.w/2+0, height-editorBtn.h/2, sideLarge/6, sideSmall/12)
     editorBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
@@ -775,23 +793,24 @@ const thirdScene =(sideSmall, sideLarge)=> {
       demoField.drawField(col.first, col.second)
 
       // theme's buttons
-      boardBtn1.setPosition(width/2+width/4, height/4, width/16, height/16)
+      boardBtn1.setPosition(width/2+width/4, height/4, sideLarge/16, sideSmall/16)
       boardBtn1.draw(col.main, col.detail)
 
-      boardBtn2.setPosition(width/2-width/4, height/4, width/16, height/16)
+      boardBtn2.setPosition(width/2-width/4, height/4, sideLarge/16, sideSmall/16)
       boardBtn2.draw(col.main, col.detail)
 
       if (boardBtn1.isButtonPressed() && currentTheme < themes.length-1) col = themes[++currentTheme]
       else if (boardBtn2.isButtonPressed() && currentTheme > 0) col = themes[--currentTheme]
 
+      let switchesBtnsWidth = sideLarge/8, switchesBtnsHeight = sideSmall/10
       // switches
-      switchMoves.setPosition(width/4-switchMoves.w/2, height-height/4, width/6, height/8)
+      switchMoves.setPosition(width/4-switchMoves.w/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
       switchMoves.draw(col.main, col.detail)
 
-      switchShoots.setPosition(width/2, height-height/4, width/6, height/8)
+      switchShoots.setPosition(width/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
       switchShoots.draw(col.main, col.detail)
 
-      switchLines.setPosition(width-width/4+switchLines.w/2, height-height/4, width/6, height/8)
+      switchLines.setPosition(width-width/4+switchLines.w/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
       switchLines.draw(col.main, col.detail)
 
       if (switchMoves.isButtonPressed()) disableOption[0] = !disableOption[0]
@@ -1002,6 +1021,7 @@ const warningScene =()=> {
     }
 
 function setup() {
+      frameRate(30)
       mouseX = -1
       mouseY = -1
       strokeJoin(ROUND)
@@ -1070,8 +1090,8 @@ function draw() {
       stroke(col.shadow)
       strokeWeight(height/450)
 
-      wallAnimation.update()
-      wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
+      // wallAnimation.update()
+      // wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
 
       // if (width/height < 5/3) {warningScene(); return}
 
