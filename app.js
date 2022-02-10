@@ -315,7 +315,7 @@ class Field {
     #searchMove(playerColor, depth) {
       let playerSide = Number(playerColor.charAt(playerColor.length-1))
       if (playerSide == 0) playerSide = -1
-      if (depth == 0) return this.getGameFieldGrade()/(this.#getAmountOfControlledSquaresByPlayer(playerColor) || 10**-6)
+      if (depth == 0) return this.getGameFieldGrade()*(this.#getAmountOfControlledSquaresByPlayer(playerColor) == 0 ? 10**6 : 1)
 
       let piecesMoves = this.#getArrayOfMoves(playerColor)
 
@@ -510,14 +510,9 @@ class Button extends TextZone {
       noStroke()
       rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl)
       pop()
-      // push()
-      // noFill()
-      // super.pushShadow()
-      // rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl)
-      // pop()
       super.popShadow()
       super.update()
-      let currentTextSize = this.h*.65
+      let currentTextSize = width < height ? this.h*.65 : this.w*.15
       if (mouseIsPressed && this.hovered) {fill('#00000033');rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl);
       currentTextSize *=.9}
       super.drawText(this.textColor, this.x, this.y+this.h/2, this.w, currentTextSize)
@@ -669,7 +664,8 @@ const firstScene =(sideSmall, sideLarge)=> {
       demoField.drawField(col.first, col.second)
       demoField.run()
 
-      btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10)
+      width > height ? btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall/2, sideLarge/10, sideLarge/10) :
+      btn1.setPosition(((sideLarge-sideSmall)-btn1.w)/2, sideSmall*1.5, sideLarge/10, sideLarge/10);
       btn1.draw(col.main, col.detail)
 
       btn2.setPosition(btn2.w/2+0, height-btn2.h/2, sideLarge/6, sideSmall/12)
@@ -1077,7 +1073,7 @@ function draw() {
       wallAnimation.update()
       wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
 
-      if (width/height < 5/3) {warningScene(); return}
+      // if (width/height < 5/3) {warningScene(); return}
 
       switch (currentScene) {
         case 0: // main screen
