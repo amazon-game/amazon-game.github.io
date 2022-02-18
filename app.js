@@ -407,7 +407,7 @@ class Ui {
     textSizeMedium
 
     update() {
-      this.textSizeSmall = width/32
+      this.textSizeSmall = (width > height ? width : height)/32
       this.textSizeMedium = this.textSizeSmall*2
     }
 
@@ -659,12 +659,11 @@ let btn1,btn2, playBtnText, chooseRivalText, rivalBtn1, rivalBtn2,
 const firstScene =(sideSmall, sideLarge)=> {
 
       /// demo zone
-      fill(255)
-      demoField.setPosition(width-height < 0 ? 0 : width-height, 0, sideSmall)
+      demoField.setPosition(width < height ? 0 : width-height, 0, sideSmall)
       demoField.drawField(col.first, col.second)
       demoField.run()
 
-      btn2.setPosition(btn2.w/2+0, height-btn2.h/2, sideLarge/6, sideSmall/12)
+      btn2.setPosition(btn2.w/2, height-btn2.h/2, sideLarge/6, sideSmall/12)
       btn2.draw(col.main, col.detail, 0, undefined, 0, 0)
 
       playBtnText.setSize(3)
@@ -680,7 +679,7 @@ const firstScene =(sideSmall, sideLarge)=> {
       })()
       :
       (()=>{
-        btn1.setPosition(width/2, sideSmall+(sideLarge-sideSmall)/2, sideLarge/10, sideLarge/10)
+        btn1.setPosition(width/2, height - Math.max((height-sideSmall)/2, btn1.h*2), sideLarge/10, sideLarge/10)
 
         rulesBtn.setPosition(width-rulesBtn.w/2+0, height-rulesBtn.h/2, sideLarge/6, sideSmall/12)
         rulesBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
@@ -702,6 +701,7 @@ const firstScene =(sideSmall, sideLarge)=> {
 const secondScene =(sideSmall, sideLarge)=> {
 
     let upperBtnsWidth = width < height ? sideSmall/6 : sideLarge/8, upperBtnsHeight = sideSmall/16
+    let padding = sideLarge/16
 
     chooseRivalText.setSize(1)
     chooseRivalShow.setSize(1)
@@ -713,7 +713,7 @@ const secondScene =(sideSmall, sideLarge)=> {
       rect(width/2, 0, width/2, height/2)
 
       chooseColorText.setSize(1)
-      chooseColorText.drawText(col.main, width/2, colorBtn1.y-colorBtn1.h*.5, width/2)
+      chooseColorText.drawText(col.main, width/2, colorBtn1.y-padding, width/2)
 
       colorBtn1.setPosition(width/2+width/8, height/4, upperBtnsWidth, upperBtnsHeight)
       colorBtn1.draw(col.main, col.detail)
@@ -724,7 +724,7 @@ const secondScene =(sideSmall, sideLarge)=> {
       chooseColorShow.setSize(1)
       if (colorBtn1.isButtonPressed()) {params.color = 'p0';chooseColorShow.text = 'black'}
       else if (colorBtn2.isButtonPressed()) {params.color = 'p1';chooseColorShow.text = 'white'}
-      chooseColorShow.drawText(col.main+'55', width/2, colorBtn1.y+colorBtn1.h*1.5, width/2)
+      chooseColorShow.drawText(col.main+'55', width/2, colorBtn1.y+colorBtn1.h+padding, width/2)
 
     }
     // ctrl+C ctrl+V
@@ -735,14 +735,14 @@ const secondScene =(sideSmall, sideLarge)=> {
 
       rivalBtn1.setPosition(width/2-width/8, height/4, upperBtnsWidth, upperBtnsHeight)
       rivalBtn2.setPosition(width/2+width/8, height/4, upperBtnsWidth, upperBtnsHeight)
-      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h*1.5, width)
-      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-rivalBtn1.h*.5, width)
+      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h+padding, width)
+      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-padding, width)
       params.color = 'p1'
     } else {
       rivalBtn1.setPosition(width/8, height/4, upperBtnsWidth, upperBtnsHeight)
       rivalBtn2.setPosition(.75*width/2, height/4, upperBtnsWidth, upperBtnsHeight)
-      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h*1.5, width/2)
-      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-rivalBtn1.h*.5, width/2)
+      chooseRivalShow.drawText(col.main+'55', 0, rivalBtn1.y+rivalBtn1.h+padding, width/2)
+      chooseRivalText.drawText(col.main, 0, rivalBtn1.y-padding, width/2)
     }
 
     rivalBtn1.draw(col.main, col.detail)
@@ -765,7 +765,7 @@ const secondScene =(sideSmall, sideLarge)=> {
     boardBtn3.draw(col.main, col.detail)
 
     chooseBoardText.setSize(1)
-    chooseBoardText.drawText(col.main, 0, boardBtn3.y-boardBtn3.h*.25, width)
+    chooseBoardText.drawText(col.main, 0, boardBtn3.y-padding, width)
 
     if (boardBtn1.isButtonPressed() && params.boardSize < 10) params.boardSize += 2
     else if (boardBtn2.isButtonPressed() && params.boardSize > 6) params.boardSize -= 2
@@ -773,7 +773,7 @@ const secondScene =(sideSmall, sideLarge)=> {
     else boardBtn3.text = ' '+params.boardSize
 
     chooseBoardShow.setSize(1)
-    chooseBoardShow.drawText(col.main+'55', 0, boardBtn3.y+boardBtn3.h*1.25, width)
+    chooseBoardShow.drawText(col.main+'55', 0, boardBtn3.y+boardBtn3.h+padding, width)
     // editor btn
     editorBtn.setPosition(width-editorBtn.w/2+0, height-editorBtn.h/2, sideLarge/6, sideSmall/12)
     editorBtn.draw(col.main, col.detail, undefined, 0, 0, 0)
@@ -849,24 +849,40 @@ const thirdScene =(sideSmall, sideLarge)=> {
 
 const fourthScene =(sideSmall, sideLarge)=> {
 
-      let sideDelta = sideLarge-sideSmall
+      let sideDelta = width-sideSmall
       gameField.setPosition(0, 0, sideSmall)
       gameField.drawField(col.first, col.second)
       gameField.run()
 
+      let tx = sideSmall, ty = 0
+
+      if (width < height) {
+        tx = width/2
+        ty = sideSmall
+      }
+
       if (params.mode == 'bot') {
         textScore.setSize(1)
         textScore.text = 'Score: ' + params.score*10
-        textScore.drawText(col.main, sideSmall, 1.5*textScore.size, sideDelta)
+        textScore.drawText(col.main, tx, 1.5*textScore.size+ty, sideDelta)
       }
 
       if (gameField.gameOver) {
+
         clocks.restart()
         textWinner.setSize(2)
         textWinner.text = gameField.moveOnFieldFor == 'p1' ? 'Winner is black' : 'Winner is White'
-        textWinner.drawText(col.main, sideSmall, (height-height/4)/2, sideDelta)
+        textWinner.drawText(col.main, tx, ty+(height-height/3)/2, sideDelta)
 
-        restartBtn.setPosition(sideSmall+sideDelta/2, height-height/4, height/6, height/6)
+        let rx = sideSmall+sideDelta/2,
+        ry = height-height/4
+
+        if (width < height) {
+          rx = width/2
+          ry = height-Math.max(sideSmall/3, (height-sideSmall)/2)
+        }
+
+        restartBtn.setPosition(rx, ry, sideSmall/6, sideSmall/6)
         restartBtn.draw(col.main, col.detail)
 
         if (restartBtn.isButtonPressed()) currentScene = 1
@@ -874,11 +890,11 @@ const fourthScene =(sideSmall, sideLarge)=> {
         if (params.mode != 'bot') {
           textWinner.setSize(2)
           textWinner.text = 'Move for: '
-          textWinner.drawText(col.main, sideSmall, 4*textWinner.size, sideDelta)
+          textWinner.drawText(col.main, tx, ty+4*textWinner.size, sideDelta)
           let icon = new Square(0,0, gameField.moveOnFieldFor)
-          icon.drawSquare(height/6, sideSmall+sideDelta/2-height/12, 5*textWinner.size)
+          icon.drawSquare(height/6, tx+sideDelta/2-height/12, ty+6*textWinner.size)
         } else {
-          clocks.setPosition(sideSmall, height/2.5, sideDelta)
+          clocks.setPosition(tx, height/2.5+ty, sideDelta)
           clocks.draw()
           if (gameField.moveOnFieldFor == params.color) clocks.run()
         }
@@ -908,18 +924,39 @@ const fifthScene =(sideSmall, sideLarge)=> {
 let activeBrush = 3
 const sixthScene =(sideSmall, sideLarge)=> {
   let widthBar = height/6
-  let fieldSide = sideSmall-widthBar
+  let fieldSide = height > width ? sideSmall : sideSmall-widthBar
   let btnsWidth = fieldSide/8
 
+
   // clear buttons
+  let bx, by, bw, bh, tx, ty
 
-  clearPiecesBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2)-clearPiecesBtn.h, sideLarge/6, sideLarge/32)
+  width > height ?
+  (()=>{
+    bx = (width-fieldSide)/4
+    by = floor(fieldSide/2)
+    bw = sideLarge/6
+    bh = sideLarge/32
+    tx = .5*(width-fieldSide)+fieldSide
+    ty = by
+  })()
+  :
+  (()=>{
+    bx = width/2
+    by = Math.min(fieldSide+widthBar*1.5, height-widthBar/2)
+    bw = width/2
+    bh = sideSmall/16
+    tx = bx
+    ty = by+widthBar/1.5
+  })()
+
+  fillBoardBtn.setPosition(bx, by, bw, bh)
+
+  clearPiecesBtn.setPosition(bx, by-fillBoardBtn.h, fillBoardBtn.w, fillBoardBtn.h)
+  clearBoardBtn.setPosition(bx, by+fillBoardBtn.h, fillBoardBtn.w, fillBoardBtn.h)
+
   clearPiecesBtn.draw(col.main, col.detail, undefined, undefined, 0, 0)
-
-  fillBoardBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2), sideLarge/6, sideLarge/32)
   fillBoardBtn.draw(col.main, col.detail, 0, 0, 0, 0)
-
-  clearBoardBtn.setPosition((width-fieldSide)/4, floor(fieldSide/2)+clearBoardBtn.h, sideLarge/6, sideLarge/32)
   clearBoardBtn.draw(col.main, col.detail, 0, 0, undefined, undefined)
 
 
@@ -930,7 +967,7 @@ const sixthScene =(sideSmall, sideLarge)=> {
   // grade text
   gradeText.setSize(1)
   gradeText.text = 'Grade: ' + gameField.getGameFieldGrade()
-  gradeText.drawText(col.main, (width+fieldSide)/2, floor(fieldSide/2), (width-fieldSide)/2)
+  gradeText.drawText(col.main, tx, ty, (width-fieldSide)/2)
 
   push()
   noFill()
@@ -942,7 +979,7 @@ const sixthScene =(sideSmall, sideLarge)=> {
   // showing active brush
   push()
   fill('#ffffff33')
-  rect((width-fieldSide)/2+activeBrush/4*fieldSide, fieldSide, 1/4*fieldSide)
+  rect((width-fieldSide)/2+activeBrush/4*fieldSide, fieldSide, 1/4*fieldSide, widthBar)
   pop()
   // brushes
   let icon = new Square(0, 0, 'p1')
@@ -983,21 +1020,30 @@ const sixthScene =(sideSmall, sideLarge)=> {
     let mx = Math.floor((mouseX-(width-fieldSide)/2)/(fieldSide/params.boardSize))
     let my = Math.floor(mouseY/(fieldSide/params.boardSize))
 
-    switch (activeBrush) {
-      case 0:
-      gameField.map[my][mx].type = 'p1'
-      break
-      case 1:
-      gameField.map[my][mx].type = 'p0'
-      break
-      case 2:
-      gameField.map[my][mx].type = 'empty'
-      break
-      case 3:
-      gameField.map[my][mx].type = 'shooted'
-      break
+    if (mouseIsPressed && mouseButton == RIGHT) gameField.map[my][mx].type = 'shooted'
+    else {
+      switch (activeBrush) {
+        case 0:
+        gameField.map[my][mx].type = 'p1'
+        break
+        case 1:
+        gameField.map[my][mx].type = 'p0'
+        break
+        case 2:
+        gameField.map[my][mx].type = 'empty'
+        break
+        case 3:
+        gameField.map[my][mx].type = 'shooted'
+        break
+      }
     }
+
   }
+
+  // mouse wheel select GOTO: last eventListner
+
+  // window.addEventListener("wheel", event => {activeBrush += Math.sign(event.deltaY);console.log(Math.sign(event.deltaY))}, false)
+
 
   // back btn
   backBtn.setPosition(backBtn.w/2+0, height-backBtn.h/2, sideLarge/8, sideSmall/12)
@@ -1117,3 +1163,12 @@ function draw() {
       }
 
     }
+
+window.addEventListener("wheel", (event) => {
+  if (currentScene == 5) {
+    activeBrush += Math.sign(event.deltaY)
+    if (activeBrush > 3) activeBrush = 0
+    else if (activeBrush < 0) activeBrush = 3
+  }
+
+})
