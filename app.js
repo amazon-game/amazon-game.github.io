@@ -125,7 +125,7 @@ class Field {
         ;(()=>{
           let shape = 'crcl'
           if (this.map[i][j].selected) {  // drawing selected
-            if (this.#playerActMoved  && !disableOption[1]) fill('#ffffff33')  // if shooting
+            if (this.#playerActMoved  && !disableOption[0]) fill('#ffffff33')  // if shooting
             else if (!this.#playerActMoved && !disableOption[0]) fill('#00000033')  // if moving
             else {noFill(); noStroke()}
           } else if (i == this.#lastMy && j == this.#lastMx && this.map[i][j].type == this.moveOnFieldFor) {fill(col.shadow.slice(0, -2)+'33'); shape = 'sqr'}
@@ -185,7 +185,6 @@ class Field {
       return
     }
     else if (this.#getAmountOfPossibleMovesForPlayer(this.moveOnFieldFor) === 0) {
-      // console.log('winner is ' + this.#changeMoveFor(this.moveOnFieldFor))
       this.gameOver = true
       if (this.settings.mode != 'bot') return
       let score = Math.floor(Math.abs(this.getGameFieldGrade())/5)*((this.getGameFieldGrade()/Math.abs(this.getGameFieldGrade())) || 1) + (this.#changeMoveFor(this.moveOnFieldFor) == 'p1' ? 1 : -1)
@@ -195,7 +194,7 @@ class Field {
       this.delay.restart()
     } else if (this.settings.mode == 'bot' && this.moveOnFieldFor != this.settings.color || this.settings.mode == 'demoPlay') { //  && this.moveOnFieldFor != this.settings.color
       this.delay.run()
-      if (this.delay.time[1] >= 1) {this.#botMove(this.moveOnFieldFor);this.delay.restart()}
+      if (this.delay.time[1] >= (!disableOption[1] || this.settings.mode == 'demoPlay' ? 1 : 0)) {this.#botMove(this.moveOnFieldFor);this.delay.restart()}
       this.#lastMx = -1
       this.#lastMy = -1
 
@@ -206,11 +205,11 @@ class Field {
       //select your amazons
       if (!this.#isValid(this.mx, this.my, this.size)) return  // checking border of all field
       else if (mouseIsPressed && this.map[this.my][this.mx].type == this.settings.color && this.moveOnFieldFor == this.settings.color) {
-        this.#clearAllSelected() // redraw selected square
         if(this.#playerActMoved == false) {  // update mouse coordinates
           this.#lastMx = this.mx
           this.#lastMy = this.my
         }
+         // redraw selected square
         this.#showSelected()
       } else if (mouseIsPressed && this.map[this.my][this.mx].selected == false && this.#playerActMoved == false) { // if clicked on not selected square -> clear field
         this.#clearAllSelected()
@@ -223,7 +222,6 @@ class Field {
         this.#lastMx = this.mx
         this.#lastMy = this.my
         this.#addLine(this.#lastMx, this.#lastMy)
-        this.#clearAllSelected()
         this.#showSelected()
       } else if (this.#playerActMoved == true && mouseIsPressed && this.map[this.my][this.mx].selected == true) {  // after moved
         this.#shootSquare(this.mx, this.my)
@@ -267,11 +265,10 @@ class Field {
 
     #showSelected() {
       let selectedMoves = this.#getMovesByCoordinats(this.#lastMx, this.#lastMy)
-      this.map.forEach(element => element.forEach(elementIn => {
-        selectedMoves.forEach(object => {
-          if (elementIn.x == object.x && elementIn.y == object.y) this.map[elementIn.y][elementIn.x].selected = true
-        })
-      }))
+      this.#clearAllSelected()
+      selectedMoves.forEach(object => {
+        this.map[object.y][object.x].selected = true
+      })
     }
 
     #addLine(x, y) {
@@ -512,7 +509,7 @@ class Button extends TextZone {
       pop()
       super.popShadow()
       super.update()
-      let currentTextSize = this.h*.65//this.w > 2.65*textWidth(this.text) ? this.h*.65 : 100
+      let currentTextSize = this.h*.6//this.w > 2.65*textWidth(this.text) ? this.h*.65 : 100
       if (mouseIsPressed && this.hovered) {fill('#00000033');rect(this.x, this.y, this.w, this.h, borderRadius_tl, borderRadius_tr, borderRadius_br, borderRadius_bl);
       currentTextSize *=.9}
       super.drawText(this.textColor, this.x, this.y+this.h/2, this.w, currentTextSize)
@@ -523,7 +520,12 @@ class Button extends TextZone {
     isButtonPressed() {
       // console.log(this);
       if (this.hovered && mouseIsPressed) {this.mouseIsReleased = true; return false}
-      else if (this.mouseIsReleased && !mouseIsPressed && this.hovered) {this.mouseIsReleased = false;return true}
+      else if (this.mouseIsReleased && !mouseIsPressed && this.hovered) {
+        this.mouseIsReleased = false
+        mouseX = -1
+        mouseY = -1
+        return true
+      }
       else {this.mouseIsReleased = false;return false}
     }
 
@@ -592,8 +594,8 @@ class AnimationAR {  // amount and rows for 'AR'
     }
 
     getRandomParticle(side=0, type='zeroStart') {
-      let w = 1/this.amount+Math.random()/(this.amount*2)
-      let randX = type == 'zeroStart' ? (side == 1 ? 1 : -w) : Math.random()
+      let w = 1/this.amount
+      let randX = type == 'zeroStart' ? (side == 1 ? 1 : -this.constHeight/width) : Math.random()
       let randY = floor(Math.random() * this.rows)/this.rows
       return new Particle(Math.random()+1, randX, randY, w)
     }
@@ -605,20 +607,20 @@ class AnimationAR {  // amount and rows for 'AR'
         fill(color)
         noStroke()
 
-        if (currentTheme == 0 || currentTheme == 4) rect(el.x*width, el.y*height, el.w*width, this.constHeight)
+        if (currentTheme == 0 || currentTheme == 4) rect(el.x*width, el.y*height, this.constHeight, this.constHeight)
         else if (currentTheme == 1) {
           push()
-          translate(el.x*width+el.w*width/2, el.y*height+this.constHeight/2)
+          translate(el.x*width+el.s*width/2, el.y*height+this.constHeight/2)
           rotate(radians(el.angle))
           el.angle += el.angleSpeed/10
-          rect(-el.w*width/2, -this.constHeight/2, el.w*width, this.constHeight)
+          rect(-el.s*width/2, -this.constHeight/2, this.constHeight, this.constHeight)
           pop()
         } else if (currentTheme == 2) {
 
           el.dir == 1 ?
           triangle(el.x*width, el.y*height, el.x*width, el.y*height+this.constHeight, el.x*width+(Math.sqrt(this.constHeight**2-((this.constHeight**2)/4))), el.y*height+this.constHeight/2)
           :
-          triangle(el.x*width+el.w*width, el.y*height, el.x*width+el.w*width, el.y*height+this.constHeight, el.x*width+el.w*width-(Math.sqrt(this.constHeight**2-((this.constHeight**2)/4))), el.y*height+this.constHeight/2)
+          triangle(el.x*width+el.s*width, el.y*height, el.x*width+el.s*width, el.y*height+this.constHeight, el.x*width+el.s*width-(Math.sqrt(this.constHeight**2-((this.constHeight**2)/4))), el.y*height+this.constHeight/2)
 
         } else if (currentTheme == 3) {
           circle(el.x*width+this.constHeight/2, el.y*height+this.constHeight/2, this.constHeight)
@@ -627,7 +629,7 @@ class AnimationAR {  // amount and rows for 'AR'
 
           el.x += 1/width*el.speed*(currentTheme == 2 ? el.dir : (currentTheme == 3 ? 0 : (currentTheme == 4 ? -1 : 1)))
           if (el.x > 1) this.objects[i] = this.getRandomParticle()
-          else if (el.x < -el.w) this.objects[i] = this.getRandomParticle(1)
+          else if (el.x*width < -this.constHeight) this.objects[i] = this.getRandomParticle(1)
         }
         pop()
       }
@@ -635,15 +637,14 @@ class AnimationAR {  // amount and rows for 'AR'
     }
 
 class Particle {
-      constructor(speed, x, y, w, h, color) {
+      constructor(speed, x, y, s, color) {
         this.dir = Math.random() > .5  ? 1 : -1
         this.angle = 0
         this.angleSpeed = (Math.random()+1)*(Math.random() > .5  ? 1 : -1)
         this.speed = speed
         this.x = x
         this.y = y
-        this.w = w
-        this.h = h
+        this.s = s
         this.color = color
       }
 
@@ -652,7 +653,7 @@ class Particle {
     // initialize all stuff
 let btn1,btn2, playBtnText, chooseRivalText, rivalBtn1, rivalBtn2,
   chooseRivalShow,chooseColorText, colorBtn1, colorBtn2, chooseColorShow,chooseBoardText,
-  boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, switchMoves, switchShoots,
+  boardBtn1, boardBtn2,boardBtn3, chooseBoardShow, demoField, backBtn, gameField, switchMoves, switchSpeed,
   switchLines, wallAnimation, resignBtn, rulesBtn, rulesTextHead, rulesText, textWinner, clocks, editorBtn,
   brush1, brush2, brush3, brush4, playButton, clearPiecesBtn, clearBoardBtn, fillBoardBtn, gradeText
     // scenes
@@ -701,7 +702,7 @@ const firstScene =(sideSmall, sideLarge)=> {
 const secondScene =(sideSmall, sideLarge)=> {
 
     let upperBtnsWidth = width < height ? sideSmall/6 : sideLarge/8, upperBtnsHeight = sideSmall/16
-    let padding = sideLarge/16
+    let padding = sideLarge/20
 
     chooseRivalText.setSize(1)
     chooseRivalShow.setSize(1)
@@ -788,15 +789,33 @@ const secondScene =(sideSmall, sideLarge)=> {
 }
 
 const thirdScene =(sideSmall, sideLarge)=> {
+      let themesBtnSw = sideLarge
+      let themesBtnSh = sideSmall
+      width > height ?
+      (()=>{
+        demoField.setPosition(width/2-demoField.width/2, 0, height/2, height/2)
+        // lines
+        push()
+        line(0, height/2, width, height/2)
+        pop()
+        themesText.setSize(2)
+        themesText.drawText(col.main, width-4*textWidth(themesText.text), 1*themesText.size)
+      })()
+      :
+      (()=>{
+        demoField.setPosition(0, 0, width, width)
+        themesBtnSh = sideLarge
+        themesBtnSw = themesBtnSh
+      })()
       // themes
-      demoField.setPosition(width/2-demoField.width/2, 0, height/2, height/2)
+
       demoField.drawField(col.first, col.second)
 
       // theme's buttons
-      boardBtn1.setPosition(width/2+width/4, height/4, sideLarge/16, sideSmall/16)
+      boardBtn1.setPosition(width/2+width/4, height/4, themesBtnSw/16, themesBtnSh/16)
       boardBtn1.draw(col.main, col.detail)
 
-      boardBtn2.setPosition(width/2-width/4, height/4, sideLarge/16, sideSmall/16)
+      boardBtn2.setPosition(width/2-width/4, height/4, themesBtnSw/16, themesBtnSh/16)
       boardBtn2.draw(col.main, col.detail)
 
       if (boardBtn1.isButtonPressed() && currentTheme < themes.length-1) col = themes[++currentTheme]
@@ -807,14 +826,14 @@ const thirdScene =(sideSmall, sideLarge)=> {
       switchMoves.setPosition(width/4-switchMoves.w/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
       switchMoves.draw(col.main, col.detail)
 
-      switchShoots.setPosition(width/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
-      switchShoots.draw(col.main, col.detail)
+      switchSpeed.setPosition(width/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
+      switchSpeed.draw(col.main, col.detail)
 
       switchLines.setPosition(width-width/4+switchLines.w/2, height-height/4, switchesBtnsWidth, switchesBtnsHeight)
       switchLines.draw(col.main, col.detail)
 
       if (switchMoves.isButtonPressed()) disableOption[0] = !disableOption[0]
-      else if (switchShoots.isButtonPressed()) disableOption[1] = !disableOption[1]
+      else if (switchSpeed.isButtonPressed()) disableOption[1] = !disableOption[1]
       else if (switchLines.isButtonPressed()) disableOption[2] = !disableOption[2]
 
       // switches text
@@ -822,9 +841,9 @@ const thirdScene =(sideSmall, sideLarge)=> {
       switchMovesText.text = disableOption[0] ? 'off' : 'on'
       switchMovesText.drawText(col.main+'55', 0, height-switchMovesText.size*1.5, width/3)
 
-      switchShootsText.setSize(1)
-      switchShootsText.text = disableOption[1] ? 'off' : 'on'
-      switchShootsText.drawText(col.main+'55', 0, height-switchMovesText.size*1.5, width)
+      switchSpeedText.setSize(1)
+      switchSpeedText.text = disableOption[1] ? 'off' : 'on'
+      switchSpeedText.drawText(col.main+'55', 0, height-switchMovesText.size*1.5, width)
 
       switchLinesText.setSize(1)
       switchLinesText.text = disableOption[2] ? 'off' : 'on'
@@ -832,18 +851,14 @@ const thirdScene =(sideSmall, sideLarge)=> {
 
       graphicsText.setSize(1)
       graphicsText.drawText(col.main, 0, graphicsText.size*1.5+height/2, width)
-      themesText.setSize(2)
-      themesText.drawText(col.main, width-4*textWidth(themesText.text), 1*themesText.size)
+
 
       // back btn
       backBtn.setPosition(backBtn.w/2+0, backBtn.h/2, sideLarge/8, sideSmall/12)
       backBtn.draw(col.main, col.detail, 0, 0, undefined, 0)
 
       if (backBtn.isButtonPressed()) currentScene = 0
-      // lines
-      push()
-      line(0, height/2, width, height/2)
-      pop()
+
 
     }
 
@@ -1056,18 +1071,8 @@ const sixthScene =(sideSmall, sideLarge)=> {
   else if (playButton.isButtonPressed() && gameField.aboutMap().p0 > 0 && gameField.aboutMap().p1 > 0) currentScene = 3
 }
 
-const warningScene =()=> {
-      push()
-      noStroke()
-      fill(col.main)
-      textSize(width/10)
-      textAlign(CENTER, CENTER)
-      text('use horizontal orientation', 0, height/2, width)
-      pop()
-    }
-
 function setup() {
-      frameRate(30)
+      frameRate(60)
       mouseX = -1
       mouseY = -1
       strokeJoin(ROUND)
@@ -1115,11 +1120,11 @@ function setup() {
       clocks = new Timer()
 
       switchMoves = new Button('moves')
-      switchShoots = new Button('shoots')
+      switchSpeed = new Button('speed')
       switchLines = new Button('lines')
 
       switchMovesText = new TextZone('on')
-      switchShootsText = new TextZone('on')
+      switchSpeedText = new TextZone('on')
       switchLinesText = new TextZone('on')
 
       graphicsText = new TextZone('Graphics')
@@ -1136,10 +1141,8 @@ function draw() {
       stroke(col.shadow)
       strokeWeight(height/450)
 
-      // wallAnimation.update()
-      // wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
-
-      // if (width/height < 5/3) {warningScene(); return}
+      wallAnimation.update()
+      wallAnimation.draw((currentTheme != 4 ? '#ffffff04' : '#00000008'))
 
       switch (currentScene) {
         case 0: // main screen
